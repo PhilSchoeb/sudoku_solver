@@ -2,6 +2,25 @@ from aima3.search import *
 import numpy as np
 import time
 
+def hill_climbing(problem):
+    """From the initial node, keep choosing the neighbor with highest value,
+    stopping when no neighbor is better. [Figure 4.2]"""
+    current = Node(problem.initial)
+    step = 0
+    while True:
+        step += 1
+        neighbors = current.expand(problem)
+        if not neighbors:
+            break
+        neighbor = argmax_random_tie(neighbors,
+                                     key=lambda node: problem.value(node.state))
+        if problem.value(neighbor.state) < problem.value(current.state):
+            break
+        if step >= 200:
+            break
+        current = neighbor
+    return current.state
+
 def cross(A, B):
     "Cross product of elements in A and elements in B."
     return [a+b for a in A for b in B]

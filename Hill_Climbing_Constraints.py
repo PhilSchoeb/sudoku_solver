@@ -78,8 +78,33 @@ def assign(values, s, d):
     """Eliminate all the other values (except d) from values[s] and propagate.
     Return values, except return False if a contradiction is detected."""
     other_values = values[s][0].replace(d, '')
-    for d2 in other_values:
-        values[s] = (values[s][0].replace(d2, ''), values[s][1])
+    if all(eliminate(values, s, d2) for d2 in other_values):
+        return values
+    else:
+        return False
+
+def eliminate(values, s, d):
+    """Eliminate d from values[s]; propagate when values or places <= 2.
+    Return values, except return False if a contradiction is detected."""
+    if d not in values[s][0]:
+        return values  # Already eliminated
+    values[s] = (values[s][0].replace(d, ''), values[s][1])
+    ## (1) If a square s is reduced to one value d2, then eliminate d2 from the peers.
+    if len(values[s][0]) == 0:
+        return False  # Contradiction: removed last value
+    elif len(values[s][0]) == 1:
+        d2 = values[s][0]
+        if not all(eliminate(values, s2, d2) for s2 in peers[s]):
+            return False
+    ## (2) If a unit u is reduced to only one place for a value d, then put it there.
+    for u in units[s]:
+        dplaces = [s for s in u if d in values[s][0]]
+        if len(dplaces) == 0:
+            return False ## Contradiction: no place for this value
+        elif len(dplaces) == 1:
+            # d can only be in one place in unit; assign it there
+            if not assign(values, dplaces[0], d):
+                return False
     return values
 
 
@@ -200,20 +225,20 @@ def solve_all(grids, name='', showif=0.0):
     def solve_single(grid):
         start = time.time()
         values = solve(grid)
-        #display(values)
+        display(values)
 
         if solved(values):
             print("Solved without Hill")
             t = time.time() - start
-            return t, True, 1, 0
+            return t, True, 1
 
         values = complete(values)
-        #display(values)
+        display(values)
         sudoku = Sudoku(values)
         initial_score = sudoku.value(values)
         solution = hill_climbing(sudoku)
         t = time.time()-start
-        #display(solution)
+        display(solution)
         final_score = sudoku.value(solution)
         print("Using Hill Climbing, went from %d to %d" % (initial_score, final_score))
 
@@ -223,14 +248,14 @@ def solve_all(grids, name='', showif=0.0):
             if val: display(val)
             print('(%.2f seconds)\n' % t)"""
 
-        return t, solved(solution), 0, final_score
+        return t, solved(solution), 0
 
-    times, results, already, scores = zip(*[solve_single(grid) for grid in grids])
+    times, results, already = zip(*[solve_single(grid) for grid in grids])
     N = len(grids)
     if N >= 1:
         print("Hill Climbing")
         print("Solved %d of %d %s puzzles, and %d were solved without Hill_Climbing, (avg %.8f secs (%d Hz), "
-              "max %.8f secs), average score : %d." % (sum(results), N, name, sum(already), sum(times)/N, N/sum(times), max(times), sum(scores)/N))
+              "max %.8f secs)." % (sum(results), N, name, sum(already), sum(times)/N, N/sum(times), max(times)))
 
 
 hard1 = '.....6....59.....82....8....45........3........6..3.54...325..6..................'
@@ -238,8 +263,8 @@ easy1 = '00302060090030500100180640000810290070000000800670820000260950080020300
 
 if __name__ == '__main__':
     test()
-    #solve_all(easy1.strip().split("\n"), "sudoku", None)
-    solve_all(from_file("100sudoku.txt"), "sudokus", None)
+    solve_all(easy1.strip().split("\n"), "sudoku", None)
+    #solve_all(from_file("100sudoku.txt"), "sudokus", None)
 
     """values = solve(easy1)
     print("\nEnter values and constraints : ")

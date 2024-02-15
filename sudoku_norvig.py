@@ -57,8 +57,6 @@ def parse_grid(grid):
     for s, d in grid_values(grid).items():
         if d in digits and not assign(values, s, d):
             return False ## (Fail if we can't assign d to square s.)
-    display(values)
-    exit()
     return values
 
 def grid_values(grid):
@@ -242,7 +240,7 @@ hard1  = '.....6....59.....82....8....45........3........6..3.54...325..6.......
     
 if __name__ == '__main__':
     test()
-    solve_all(from_file("top95.txt"), "sudokus", None)
+    solve_all(from_file("100sudoku.txt"), "sudokus", None)
     # solve_all(from_file("top95.txt"), "95sudoku", None)
     # solve_all(from_file("easy50.txt", '========'), "easy", None)
     # solve_all(from_file("easy50.txt", '========'), "easy", None)

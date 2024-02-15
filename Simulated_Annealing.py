@@ -2,6 +2,9 @@ from aima3.search import *
 import numpy as np
 import time
 
+def sched(alpha=0.99):
+    return lambda t: alpha*t if t > 1 * 10**(-20) else 0
+
 def cross(A, B):
     "Cross product of elements in A and elements in B."
     return [a+b for a in A for b in B]
@@ -100,6 +103,22 @@ def complete(values):
         assert len(dig_left) == 0
     return values
 
+def simulated_annealing(problem, schedule=exp_schedule()):
+    """[Figure 4.5] CAUTION: This differs from the pseudocode as it
+    returns a state instead of a Node."""
+    current = Node(problem.initial)
+    T = 3
+    while True:
+        T = schedule(T)
+        if T == 0:
+            return current.state
+        neighbors = current.expand(problem)
+        if not neighbors:
+            return current.state
+        next = random.choice(neighbors)
+        delta_e = problem.value(next.state) - problem.value(current.state)
+        if delta_e > 0 or probability(math.exp(delta_e / T)):
+            current = next
 
 
 class Sudoku(Problem):
@@ -138,9 +157,6 @@ class Sudoku(Problem):
         b = state is not False and all(unitsolved(unit) for unit in unitlist)
         return b
 
-    def path_cost(self, c, state1, action, state2):
-        return 0
-
     def value(self, state):  # put negative value so it can maximise score
         score = 0
 
@@ -175,12 +191,6 @@ class Sudoku(Problem):
         return score
 
 
-def str_sudoku(sudoku):
-    s = ""
-    for i in range(9):
-        s += sudoku[9 * i: 9 * i + 9]
-        s += "\n"
-    return s
 
 def from_file(filename, sep='\n'):
     "Parse a file into a list of strings, separated by sep."
@@ -211,11 +221,11 @@ def solve_all(grids, name='', showif=0.0):
         #display(values)
         sudoku = Sudoku(values)
         initial_score = sudoku.value(values)
-        solution = hill_climbing(sudoku)
+        solution = simulated_annealing(sudoku, sched())
         t = time.time()-start
         #display(solution)
         final_score = sudoku.value(solution)
-        print("Using Hill Climbing, went from %d to %d" % (initial_score, final_score))
+        print("Using SA, went from %d to %d" % (initial_score, final_score))
 
         """# Display puzzles that take long enough
         if showif is not None and t > showif:
@@ -228,8 +238,8 @@ def solve_all(grids, name='', showif=0.0):
     times, results, already, scores = zip(*[solve_single(grid) for grid in grids])
     N = len(grids)
     if N >= 1:
-        print("Hill Climbing")
-        print("Solved %d of %d %s puzzles, and %d were solved without Hill_Climbing, (avg %.8f secs (%d Hz), "
+        print("Simulated Annealing")
+        print("Solved %d of %d %s puzzles, and %d were solved without SA, (avg %.8f secs (%d Hz), "
               "max %.8f secs), average score : %d." % (sum(results), N, name, sum(already), sum(times)/N, N/sum(times), max(times), sum(scores)/N))
 
 
